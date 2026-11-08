@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IMD Automated Map Generation — Direct Excel Telemetry Dashboard | Meteorological Centre Hyderabad</title>
+  <meta name="description"
+    content="Live telemetry dashboard for IMD Hyderabad's direct Excel-to-QGIS automated thematic map generation pipeline (7-Day Spatial Forecasts, 5-Day Multi-Hazard Warnings, and Temperature Forecasts).">
+  <link rel="icon" type="image/png" href="/templates/IMD_LOGO.png">
+  <link rel="shortcut icon" type="image/png" href="/templates/IMD_LOGO.png">
+  <link rel="apple-touch-icon" href="/templates/IMD_LOGO.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════════════════════════════
+       DESIGN TOKENS
+       Base unit: 4px. Two radii for structure (sm=controls, lg=surfaces).
+       One elevation system (3 steps). Navy/gold carries the IMD identity;
+       each pipeline module keeps its own accent for fast visual scanning.
+       ══════════════════════════════════════════════════════════════════ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Institutional palette */
+      --navy-900: #0A1B33;
+      --navy-800: #10254A;
+      --navy-700: #17376B;
+      --gold: #B8923F;
+      --gold-light: #E4C979;
+      --gold-wash: #FBF5E6;
+
+      /* Surface & text */
+      --paper: #F2F5FA;
+      --surface: #FFFFFF;
+      --surface-2: #F8FAFD;
+      --line: #E3E8F0;
+      --line-soft: #EDF1F6;
+      --ink: #101828;
+      --body-text: #3A4457;
+      --muted: #66738A;
+      --muted-2: #94A0B4;
+
+      /* Module accents (each pipeline keeps a distinct identity) */
+      --rain: #0B6FB0;
+      --rain-dk: #075282;
+      --rain-bg: #E7F2FB;
+      --summer: #C9600C;
+      --summer-dk: #9C4A08;
+      --summer-bg: #FBEEE0;
+      --parser: #443CC4;
+      --parser-dk: #322A9C;
+      --parser-bg: #EBEAFB;
+      --allmod: #0C8B5A;
+      --allmod-dk: #096B46;
+      --allmod-bg: #E4F5EC;
+
+      /* Status */
+      --success: #157A44;
+      --success-bg: #E9F8EF;
+      --success-ln: #A9E4C0;
+      --warn: #B6650A;
+      --warn-bg: #FDF3E4;
+      --warn-ln: #F3D398;
+      --error: #C22B2B;
+      --error-bg: #FCEBEB;
+      --error-ln: #F3B7B7;
+      --info: #1D5FD1;
+
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+      --r-sm: 7px;
+      --r-lg: 14px;
+
+      --sh-1: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 1px rgba(16, 24, 40, 0.03);
+      --sh-2: 0 6px 16px rgba(16, 24, 40, 0.08), 0 2px 4px rgba(16, 24, 40, 0.04);
+      --sh-3: 0 24px 48px rgba(10, 27, 51, 0.22), 0 4px 12px rgba(10, 27, 51, 0.10);
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      font-size: 13.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    :focus-visible {
+      outline: 2.5px solid var(--rain);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* ─── HEADER ─────────────────────────────────────────────── */
+    .header {
+      background:
+        radial-gradient(900px 240px at 88% 0%, rgba(184, 146, 63, 0.14) 0%, transparent 60%),
+        linear-gradient(120deg, var(--navy-900) 0%, var(--navy-800) 55%, #143363 100%);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      border-bottom: 3px solid var(--gold);
+      min-height: 76px;
+    }
+
+    .header-logo {
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+      background: #FFFFFF;
+      border-radius: 50%;
+      padding: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+    }
+
+    .header-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      border-radius: 50%;
+    }
+
+    .header-branding {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+      padding: 12px 0;
+    }
+
+    .gov-meta {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .gov-meta .dept {
+      color: var(--gold-light);
+      font-weight: 700;
+    }
+
+    .gov-meta .sep {
+      color: rgba(255, 255, 255, 0.22);
+    }
+
+    .gov-meta .centre {
+      color: #CFE3FB;
+      font-weight: 600;
+    }
+
+    .system-title-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .system-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.1px;
+      line-height: 1.3;
+    }
+
+    .env-badge {
+      background: rgba(184, 146, 63, 0.20);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      font-size: 9.5px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.4px;
+    }
+
+    .gov-sub {
+      font-size: 10.5px;
+      color: rgba(255, 255, 255, 0.48);
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      padding-left: 24px;
+      border-left: 1px solid rgba(255, 255, 255, 0.14);
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .live-time {
+      font-size: 18px;
+      font-weight: 600;
+      color: #FFFFFF;
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.4px;
+    }
+
+    .live-date {
+      font-size: 10.5px;
+      color: rgba(255, 255, 255, 0.55);
+      font-weight: 500;
+    }
+
+    /* ─── CONTAINER ───────────────────────────────────────────── */
+    .container {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 24px 32px 40px;
+    }
+
+    /* ─── TOP BAR ─────────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 24px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 13px 20px;
+      box-shadow: var(--sh-1);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--success-bg);
+      border: 1px solid var(--success-ln);
+      color: var(--success);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.45;
+        transform: scale(0.82);
+      }
+    }
+
+    .refresh-info {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sync-group {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .countdown-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+
+    .countdown-val {
+      font-weight: 700;
+      color: var(--rain-dk);
+      font-family: var(--mono);
+      background: var(--rain-bg);
+      border: 1px solid #CBE1F5;
+      padding: 2px 8px;
+      border-radius: 5px;
+      min-width: 34px;
+      text-align: center;
+    }
+
+    /* ─── SECTION LABELS ──────────────────────────────────────── */
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy-800);
+      margin-bottom: 13px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--line);
+    }
+
+    /* ─── STATS GRID ──────────────────────────────────────────── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 16px 18px;
+      box-shadow: var(--sh-1);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .stat-card.highlight {
+      border-top: 3px solid var(--navy-700);
+    }
+
+    .stat-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: var(--muted);
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--navy-900);
+      letter-spacing: -0.2px;
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      word-break: break-all;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--muted-2);
+      margin-top: 1px;
+    }
+
+    /* ─── ACTION MODULES GRID ─────────────────────────────────── */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .action-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 20px;
+      box-shadow: var(--sh-1);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+      transition: box-shadow 0.18s ease, transform 0.18s ease;
+      border-top: 3px solid transparent;
+    }
+
+    .action-card:hover {
+      box-shadow: var(--sh-2);
+      transform: translateY(-2px);
+    }
+
+    .rain-card {
+      border-top-color: var(--rain);
+    }
+
+    .summer-card {
+      border-top-color: var(--summer);
+    }
+
+    .parser-card {
+      border-top-color: var(--parser);
+    }
+
+    .all-card {
+      border-top-color: var(--allmod);
+    }
+
+    .action-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .action-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+    }
+
+    .icon-rain {
+      background: var(--rain-bg);
+      color: var(--rain-dk);
+    }
+
+    .icon-summer {
+      background: var(--summer-bg);
+      color: var(--summer-dk);
+    }
+
+    .icon-parser {
+      background: var(--parser-bg);
+      color: var(--parser-dk);
+    }
+
+    .icon-all {
+      background: var(--allmod-bg);
+      color: var(--allmod-dk);
+    }
+
+    .action-badge {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      padding: 4px 9px;
+      border-radius: 20px;
+    }
+
+    .badge-rain-module {
+      background: var(--rain-bg);
+      color: var(--rain-dk);
+    }
+
+    .badge-summer-module {
+      background: var(--summer-bg);
+      color: var(--summer-dk);
+    }
+
+    .badge-parser-module {
+      background: var(--parser-bg);
+      color: var(--parser-dk);
+    }
+
+    .badge-all-module {
+      background: var(--allmod-bg);
+      color: var(--allmod-dk);
+    }
+
+    .action-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+      margin-bottom: 7px;
+      letter-spacing: -0.1px;
+    }
+
+    .action-desc {
+      font-size: 12px;
+      color: var(--body-text);
+      line-height: 1.55;
+    }
+
+    .action-desc code {
+      font-family: var(--mono);
+      font-size: 10.8px;
+      background: var(--surface-2);
+      border: 1px solid var(--line-soft);
+      padding: 1.5px 5px;
+      border-radius: 4px;
+      color: var(--navy-800);
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: var(--r-sm);
+      border: none;
+      font-family: var(--sans);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: filter 0.15s ease, transform 0.15s ease;
+      color: #FFFFFF;
+    }
+
+    .btn-action:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+
+    .btn-action:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-action:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-rain {
+      background: linear-gradient(135deg, var(--rain) 0%, var(--rain-dk) 100%);
+    }
+
+    .btn-summer {
+      background: linear-gradient(135deg, var(--summer) 0%, var(--summer-dk) 100%);
+    }
+
+    .btn-parser {
+      background: linear-gradient(135deg, var(--parser) 0%, var(--parser-dk) 100%);
+    }
+
+    .btn-all {
+      background: linear-gradient(135deg, var(--allmod) 0%, var(--allmod-dk) 100%);
+    }
+
+    /* ─── BATCH DOWNLOAD BUTTONS ─────────────────────────────────── */
+    .batch-download-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-download-batch {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 13px;
+      border-radius: var(--r-sm);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid transparent;
+      text-decoration: none;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .btn-download-batch:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.16);
+      filter: brightness(1.06);
+    }
+
+    .btn-download-batch:active:not(:disabled) {
+      transform: translateY(1px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-download-batch:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-download-png {
+      background: linear-gradient(135deg, #0B6FB0 0%, #075282 100%);
+      color: #FFFFFF;
+      border-color: #075282;
+    }
+
+    .btn-download-png .badge-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
+      font-size: 10.5px;
+      font-family: var(--mono);
+      padding: 1.5px 6.5px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .btn-download-pdf {
+      background: linear-gradient(135deg, #C22B2B 0%, #9B1C1C 100%);
+      color: #FFFFFF;
+      border-color: #9B1C1C;
+    }
+
+    .btn-download-pdf .badge-count {
+      background: rgba(255, 255, 255, 0.22);
+      color: #FFFFFF;
+      font-size: 10.5px;
+      font-family: var(--mono);
+      padding: 1.5px 6.5px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .btn-download-all {
+      background: linear-gradient(135deg, #10254A 0%, #0A1B33 100%);
+      color: #F8FAFD;
+      border: 1px solid #2A4365;
+    }
+
+    .btn-download-all:hover:not(:disabled) {
+      background: linear-gradient(135deg, #17376B 0%, #10254A 100%);
+    }
+
+    .btn-stat-dl {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3.5px 9px;
+      border-radius: 5px;
+      font-family: var(--sans);
+      font-size: 10.5px;
+      font-weight: 700;
+      border: 1px solid #CBD5E1;
+      background: #FFFFFF;
+      color: var(--navy-800);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+
+    .btn-stat-dl:hover {
+      background: var(--paper);
+      border-color: var(--navy-700);
+      color: var(--rain-dk);
+      transform: translateY(-1px);
+    }
+
+    /* ─── LIVE EXECUTION PROGRESS CARD ───────────────────────────── */
+    .progress-banner {
+      background: var(--surface);
+      border: 1px solid #B9D6F1;
+      border-radius: var(--r-lg);
+      box-shadow: var(--sh-2);
+      margin-bottom: 28px;
+      overflow: hidden;
+    }
+
+    .spinner-spin {
+      display: inline-block;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ─── CARDS & SURFACES ───────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      box-shadow: var(--sh-1);
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 14px 22px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+      letter-spacing: 0.1px;
+    }
+
+    .card-body {
+      padding: 20px 22px;
+    }
+
+    .card-badge {
+      margin-left: auto;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--muted);
+      font-family: var(--mono);
+      background: var(--surface);
+      padding: 3px 9px;
+      border-radius: 5px;
+      border: 1px solid var(--line);
+    }
+
+    /* ─── STATUS BADGES ──────────────────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      border-radius: 20px;
+      letter-spacing: 0.2px;
+    }
+
+    .badge-success {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid var(--success-ln);
+    }
+
+    .badge-warning {
+      background: var(--warn-bg);
+      color: var(--warn);
+      border: 1px solid var(--warn-ln);
+    }
+
+    .badge-error {
+      background: var(--error-bg);
+      color: var(--error);
+      border: 1px solid var(--error-ln);
+    }
+
+    .badge-info {
+      background: var(--rain-bg);
+      color: var(--rain-dk);
+      border: 1px solid #CBE1F5;
+    }
+
+    .badge-unknown {
+      background: var(--surface-2);
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+
+    .badge-running {
+      background: var(--rain-dk);
+      color: #FFFFFF;
+      animation: pulse 1.5s infinite;
+    }
+
+    /* ─── MAPS CATALOGUE ─────────────────────────────────────── */
+    .map-catalogue {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .map-type-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--r-lg);
+      padding: 19px;
+      box-shadow: var(--sh-1);
+      transition: box-shadow 0.18s ease, transform 0.18s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map-type-card:hover {
+      box-shadow: var(--sh-2);
+      transform: translateY(-2px);
+    }
+
+    .map-type-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .map-type-icon {
+      font-size: 19px;
+      line-height: 1;
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-2);
+      border-radius: 9px;
+    }
+
+    .map-type-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+      flex: 1;
+      line-height: 1.35;
+      padding-top: 3px;
+    }
+
+    .map-count-badge {
+      background: var(--navy-800);
+      color: #FFFFFF;
+      font-size: 9.5px;
+      font-weight: 700;
+      border-radius: 20px;
+      padding: 3px 9px;
+      font-family: var(--mono);
+      white-space: nowrap;
+    }
+
+    .map-type-desc {
+      font-size: 11.5px;
+      color: var(--body-text);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .map-section-title {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin: 10px 0 7px 0;
+    }
+
+    .map-section-title:first-of-type {
+      margin-top: 0;
+    }
+
+    .map-legend-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 11.5px;
+      color: var(--body-text);
+      margin-bottom: 5px;
+    }
+
+    .leg-swatch {
+      width: 13px;
+      height: 13px;
+      border-radius: 3px;
+      border: 1px solid rgba(16, 24, 40, 0.14);
+      flex-shrink: 0;
+    }
+
+    /* ─── OUTPUTS & FRESHNESS TABLES ─────────────────────────── */
+    .output-table,
+    .fresh-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    .output-table th,
+    .fresh-table th {
+      background: var(--surface-2);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 10px;
+      letter-spacing: 0.4px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+    }
+
+    .output-table td,
+    .fresh-table td {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line-soft);
+      vertical-align: middle;
+      color: var(--body-text);
+    }
+
+    .output-table tr:hover td,
+    .fresh-table tr:hover td {
+      background: var(--surface-2);
+    }
+
+    .output-table tr:last-child td,
+    .fresh-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .fname {
+      font-weight: 600;
+      color: var(--navy-800);
+      font-family: var(--mono);
+      font-size: 11.5px;
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-link {
+      color: var(--rain-dk);
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 11px;
+      padding: 5px 11px;
+      border-radius: var(--r-sm);
+      border: 1px solid #CBE1F5;
+      background: var(--rain-bg);
+      transition: background 0.15s ease, border-color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    .btn-link:hover {
+      background: #DAEBFA;
+      border-color: #A9CFEE;
+    }
+
+    .ind-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 7px;
+      vertical-align: middle;
+    }
+
+    .ind-ok {
+      background: var(--success);
+      box-shadow: 0 0 0 3px var(--success-bg);
+    }
+
+    .ind-warn {
+      background: var(--warn);
+      box-shadow: 0 0 0 3px var(--warn-bg);
+    }
+
+    .ind-err {
+      background: var(--error);
+      box-shadow: 0 0 0 3px var(--error-bg);
+    }
+
+    .data-ok {
+      color: var(--success);
+      font-weight: 700;
+    }
+
+    .data-warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    .data-err {
+      color: var(--error);
+      font-weight: 700;
+    }
+
+    /* ─── CATALOGUE FILTER TABS & SEARCH ─────────────────────── */
+    .catalogue-tab-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .cat-tab-btn {
+      padding: 6px 13px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 20px;
+      font-family: var(--sans);
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .cat-tab-btn:hover {
+      background: var(--rain-bg);
+      color: var(--rain-dk);
+      border-color: #BFDBFE;
+    }
+
+    .cat-tab-btn.active {
+      background: var(--navy-900);
+      color: #FFFFFF;
+      border-color: var(--navy-900);
+    }
+
+    .map-search-input {
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--r-sm);
+      font-size: 11.5px;
+      font-family: var(--mono);
+      width: 220px;
+      background: var(--surface);
+      color: var(--ink);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      outline: none;
+    }
+
+    .map-search-input:focus {
+      border-color: var(--rain);
+      box-shadow: 0 0 0 3px var(--rain-bg);
+    }
+
+    .map-search-input::placeholder {
+      color: var(--muted-2);
+    }
+
+    /* ─── GALLERY GRID & MODAL LIGHTBOX ────────────────────── */
+    .view-toggle-bar {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--surface-2);
+      padding: 3px;
+      border-radius: var(--r-sm);
+      border: 1px solid var(--line);
+    }
+
+    .view-toggle-btn {
+      padding: 5px 11px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .view-toggle-btn.active {
+      background: var(--surface);
+      color: var(--navy-900);
+      box-shadow: var(--sh-1);
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+      gap: 16px;
+      padding: 20px 22px;
+    }
+
+    .gallery-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      overflow: hidden;
+      box-shadow: var(--sh-1);
+      transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-card:hover {
+      box-shadow: var(--sh-2);
+      border-color: #BFDBFE;
+      transform: translateY(-2px);
+    }
+
+    .gallery-thumb-wrap {
+      width: 100%;
+      height: 182px;
+      background: var(--surface-2);
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .gallery-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.25s ease;
+    }
+
+    .gallery-card:hover .gallery-thumb-img {
+      transform: scale(1.035);
+    }
+
+    .gallery-zoom-badge {
+      position: absolute;
+      bottom: 9px;
+      right: 9px;
+      background: rgba(10, 27, 51, 0.78);
+      color: #FFFFFF;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .gallery-info {
+      padding: 13px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      flex: 1;
+    }
+
+    .gallery-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--navy-900);
+      font-family: var(--mono);
+      word-break: break-all;
+      line-height: 1.4;
+    }
+
+    .gallery-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    .gallery-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 9px;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .gallery-actions .btn-link {
+      flex: 1;
+      justify-content: center;
+    }
+
+    /* Modal Lightbox */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 20, 38, 0.72);
+      backdrop-filter: blur(5px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border-radius: var(--r-lg);
+      max-width: 92vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--sh-3);
+      border: 1px solid var(--line);
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy-900);
+      font-family: var(--mono);
+    }
+
+    .modal-close-btn {
+      background: var(--rain-bg);
+      border: 1px solid #BFDBFE;
+      color: var(--navy-900);
+      border-radius: 6px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--error-bg);
+      color: var(--error);
+      border-color: var(--error-ln);
+    }
+
+    .modal-body {
+      padding: 18px;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--navy-900);
+      max-height: calc(90vh - 110px);
+    }
+
+    .modal-img {
+      max-width: 100%;
+      max-height: 76vh;
+      object-fit: contain;
+      border-radius: 4px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    }
+
+    /* ─── FILE UPLOAD DROPZONE ──────────────────────────────── */
+    .upload-box {
+      border: 1.5px dashed #A9CFEE;
+      background: var(--rain-bg);
+      border-radius: var(--r-lg);
+      padding: 22px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      margin-bottom: 18px;
+    }
+
+    .upload-box:hover {
+      background: #E1EFFB;
+      border-color: var(--rain);
+    }
+
+    .upload-icon {
+      font-size: 26px;
+      margin-bottom: 7px;
+    }
+
+    /* ─── TOAST NOTIFICATIONS ───────────────────────────────── */
+    .toast-msg {
+      pointer-events: auto;
+      padding: 13px 18px;
+      border-radius: 10px;
+      background: var(--surface);
+      box-shadow: var(--sh-3);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12.5px;
+      font-weight: 600;
+      min-width: 300px;
+      max-width: 440px;
+      animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      border-left: 4px solid var(--rain);
+      line-height: 1.4;
+    }
+
+    .toast-success {
+      border-left-color: var(--success);
+      color: #0D3D26;
+      background: var(--success-bg);
+    }
+
+    .toast-warning {
+      border-left-color: var(--warn);
+      color: #5C3A08;
+      background: var(--warn-bg);
+    }
+
+    .toast-error {
+      border-left-color: var(--error);
+      color: #631414;
+      background: var(--error-bg);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(46px) scale(0.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    /* ─── FOOTER ─────────────────────────────────────────────── */
+    .page-footer {
+      background: linear-gradient(120deg, var(--navy-900) 0%, var(--navy-800) 100%);
+      border-top: 3px solid var(--gold);
+      padding: 17px 32px;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.6);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .page-footer a {
+      color: var(--gold-light);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .page-footer a:hover {
+      text-decoration: underline;
+      color: #FFFFFF;
+    }
+
+    .page-footer .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-footer .footer-row .sep {
+      color: rgba(255, 255, 255, 0.22);
+    }
+
+    /* ─── RESPONSIVENESS ─────────────────────────────────────── */
+    @media (max-width: 1280px) {
+      .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .action-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .map-catalogue {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 780px) {
+      .header {
+        padding: 14px 18px;
+        flex-wrap: wrap;
+      }
+
+      .header-right {
+        padding-left: 0;
+        border-left: none;
+        width: 100%;
+        align-items: flex-start;
+        margin-top: 4px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .map-catalogue {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 18px;
+      }
+
+      .sync-group {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .map-search-input {
+        width: 100%;
+      }
+
+      .catalogue-tab-bar {
+        width: 100%;
+      }
+
+      .batch-download-group {
+        width: 100%;
+      }
+
+      .batch-download-group .btn-download-batch {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .card-header>div {
+        margin-left: 0 !important;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  
+  <header class="header">
+    <div class="header-logo">
+      <img src="/templates/IMD_LOGO.png" alt="India Meteorological Department Emblem">
+    </div>
+    <div class="header-branding">
+      <div class="gov-meta">
+        <span class="dept">India Meteorological Department</span>
+        <span class="sep">|</span>
+        <span class="centre">Meteorological Centre Hyderabad</span>
+      </div>
+      <div class="system-title-row">
+        <h1 class="system-title">Automated Spatial Data Processing and Thematic Map Generation</h1>
+      </div>
+      <div class="gov-sub">Ministry of Earth Sciences, Government of India &nbsp;·&nbsp; Ph: 040-27908506 &nbsp;·&nbsp;
+        mausam.imd.gov.in/hyderabad</div>
+    </div>
+    <div class="header-right">
+      <div class="live-time" id="live-time">--:--:--</div>
+      <div class="live-date" id="live-date">Loading...</div>
+    </div>
+  </header>
+
+  
+  <div class="container">
+
+    
+    <div class="topbar">
+      <div class="live-pill">
+        <div class="live-dot"></div>
+        <span>Direct Excel Engine Operational</span>
+      </div>
+      <div class="refresh-info" id="refresh-info">Initialising telemetry fetch…</div>
+      <div class="sync-group">
+        <div class="countdown-wrap">
+          <span>Auto-sync in</span>
+          <span class="countdown-val" id="countdown-val">10s</span>
+        </div>
+      </div>
+    </div>
+
+    
+    <div id="toast-container"
+      style="position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:10px; pointer-events:none;">
+    </div>
+
+    
+    <div class="section-label">System Overview &amp; Live Output Counters</div>
+    <div class="stats-grid">
+      <div class="stat-card highlight">
+        <div class="stat-label">Multi-Hazard Workbook</div>
+        <div class="stat-value" id="stat-rain-excel">Multi_Hazard.xlsx</div>
+        <div class="stat-sub" id="stat-rain-sub">Checking input…</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">Summer Workbook</div>
+        <div class="stat-value" id="stat-summer-excel">SUMMER.xlsx</div>
+        <div class="stat-sub" id="stat-summer-sub">Checking input…</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">7-Day Spatial Maps</div>
+        <div class="stat-value" id="stat-spatial-count">7 Maps</div>
+        <div class="stat-sub">Days 1 to 7 Full Spatial Forecast</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">5-Day Warning Maps</div>
+        <div class="stat-value" id="stat-warning-count">10 Maps</div>
+        <div class="stat-sub">5 Thunderstorm + 5 Intensity</div>
+      </div>
+      <div class="stat-card highlight">
+        <div class="stat-label">Total Generated Outputs</div>
+        <div class="stat-value" id="stat-v-maps">29 PNGs</div>
+        <div class="stat-sub" id="stat-v-sub">29 PNGs + 29 PDFs (58 Total)</div>
+        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+          <button onclick="downloadBatch('png')" class="btn-stat-dl" title="Download all generated PNG maps as ZIP archive">🖼️ All PNGs (ZIP)</button>
+          <button onclick="downloadBatch('pdf')" class="btn-stat-dl" title="Download all generated PDF bulletins as ZIP archive">📄 All PDFs (ZIP)</button>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="section-label">On-Demand Map Generation Modules</div>
+    <div class="action-grid">
+
+      
+      <div class="action-card rain-card">
+        <div>
+          <div class="action-card-header">
+            <div class="action-icon-wrap icon-rain">🌧️</div>
+            <span class="action-badge badge-rain-module">Rainfall &amp; Multi-Hazard</span>
+          </div>
+          <h3 class="action-title">Multi-Hazard &amp; Rain Pipeline</h3>
+          <p class="action-desc">Direct in-memory processing from Multi-Hazard Excel sheet. Generates <strong>7-Day
+              Spatial Forecast</strong> (Days 1–7), <strong>5-Day Thunderstorm Warnings</strong> (Days 1–5), and
+            <strong>5-Day Rainfall Intensity</strong> maps directly to 300 DPI PNG &amp; PDF.</p>
+        </div>
+        <button id="btn-gen-rain" onclick="triggerRainPipeline()" class="btn-action btn-rain">
+          <span>🌧️</span>
+          <span>Generate Rain &amp; Warning Maps</span>
+        </button>
+      </div>
+
+      
+      <div class="action-card summer-card">
+        <div>
+          <div class="action-card-header">
+            <div class="action-icon-wrap icon-summer">☀️</div>
+            <span class="action-badge badge-summer-module">Temperature Module</span>
+          </div>
+          <h3 class="action-title">Summer Temperature Pipeline</h3>
+          <p class="action-desc">Direct in-memory processing from <code>SUMMER.xlsx</code>. Generates 10 Daily TMAX
+            &amp; TMIN Forecasts (Days 1–5) and 2 Official 5-Day Grid Summary Bulletins (300 DPI PNG &amp; PDF).</p>
+        </div>
+        <button id="btn-gen-summer" onclick="triggerSummerPipeline()" class="btn-action btn-summer">
+          <span>☀️</span>
+          <span>Generate Temperature Maps</span>
+        </button>
+      </div>
+
+      
+      <div class="action-card parser-card">
+        <div>
+          <div class="action-card-header">
+            <div class="action-icon-wrap icon-parser">📄</div>
+            <span class="action-badge badge-parser-module">Direct Ingestion</span>
+          </div>
+          <h3 class="action-title">Excel Ingestion Validator</h3>
+          <p class="action-desc">Inspects and validates uploaded Excel workbooks (<code>data/input/</code>) in-memory
+            across all 33 canonical Telangana districts with <strong>zero CSV creation</strong>.</p>
+        </div>
+        <button id="btn-parse-excel" onclick="triggerParseExcel(event)" class="btn-action btn-parser">
+          <span>📄</span>
+          <span>Validate Excel Ingestion</span>
+        </button>
+      </div>
+
+      
+      <div class="action-card all-card">
+        <div>
+          <div class="action-card-header">
+            <div class="action-icon-wrap icon-all">🚀</div>
+            <span class="action-badge badge-all-module">Complete Suite</span>
+          </div>
+          <h3 class="action-title">Full GIS Automation</h3>
+          <p class="action-desc">Full end-to-end pass. Runs all Spatial (7 days), Thunderstorm (5 days), Intensity (5
+            days), and Temperature (12 maps) pipelines sequentially (58 total outputs).</p>
+        </div>
+        <button id="btn-run-all" onclick="triggerPipeline('all', event)" class="btn-action btn-all">
+          <span>🚀</span>
+          <span>Run All Maps Pipeline</span>
+        </button>
+      </div>
+
+    </div>
+
+    
+    <div id="execution-progress-card" class="card progress-banner" style="display:none;">
+      <div class="card-header" style="background: var(--rain-bg); border-bottom: 1px solid #BFDBFE;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="spinner-spin" style="font-size:17px;">⏳</span>
+          <span class="card-title" id="progress-module-title" style="color:var(--navy-900);">EXECUTING MAP GENERATION
+            PIPELINE</span>
+        </div>
+        <span class="status-badge badge-running" id="progress-status-badge">RUNNING</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:11px;">
+          <span id="progress-step-text" style="font-weight:700; font-size:13.5px; color:var(--navy-900);">Initializing
+            environment...</span>
+          <span id="progress-pct-text"
+            style="font-weight:700; font-family:var(--mono); font-size:17px; color:var(--rain-dk);">0%</span>
+        </div>
+        <div class="progress-track"
+          style="width:100%; height:10px; background:var(--rain-bg); border-radius:20px; overflow:hidden; position:relative; border:1px solid #CBE1F5;">
+          <div id="progress-bar-fill"
+            style="width:0%; height:100%; background: linear-gradient(90deg, var(--rain) 0%, var(--rain-dk) 100%); transition: width 0.4s ease; border-radius:20px;">
+          </div>
+        </div>
+        <div
+          style="display:flex; justify-content:space-between; margin-top:11px; font-size:11.5px; color:var(--muted);">
+          <span>Execution Engine: <strong style="color:var(--navy-900);">Direct In-Memory PyQGIS
+              (Zero-CSV)</strong></span>
+          <span>Elapsed Time: <strong id="progress-elapsed-val"
+              style="font-family:var(--mono); color:var(--navy-900);">0s</strong></span>
+        </div>
+      </div>
+    </div>
+
+    
+    <div class="section-label">Official Map Products Catalogue &amp; Legend Scales</div>
+    <div class="map-catalogue">
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">🌧️</span>
+          <span class="map-type-name">7-Day Spatial Forecast</span>
+          <span class="map-count-badge">7 Maps (Days 1–7)</span>
+        </div>
+        <div class="map-type-desc">7-day district-wise spatial rainfall distribution forecast across all 33 Telangana
+          districts generated directly from Multi-Hazard Excel sheet.</div>
+        <div class="map-section-title">Official Spatial Legend</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFFFF;"></div>Dry (0% area)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#6BEA48;"></div>Isolated — One or two places (1–25%)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#0A7A32;"></div>Scattered — Few places (26–50%)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#56ACE6;"></div>Fairly Widespread — Many places (51–75%)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#2E73D8;"></div>Widespread — Most places (76–100%)
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          rainfall_forecast_day1.png to day7.png</div>
+      </div>
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">⚡</span>
+          <span class="map-type-name">5-Day Thunderstorm Warning</span>
+          <span class="map-count-badge">5 Maps (Days 1–5)</span>
+        </div>
+        <div class="map-type-desc">Days 1 to 5 thunderstorm and gusty wind warning maps with official lightning cloud
+          and wind arrow symbology.</div>
+        <div class="map-section-title">Thunderstorm Warning Scale</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#009900;"></div>No warning (Nil) — No Action
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>TSLG3 — Thunderstorm + Gusty Wind (30–40 kmph)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF9900;"></div>TSLG4 — Thunderstorm + Gusty Wind (40–50 kmph)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>TSLG5 — Thunderstorm + Squall / Wind (50–60 kmph)
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          thunderstorm_warning_day1.png to day5.png</div>
+      </div>
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">⚠️</span>
+          <span class="map-type-name">5-Day Rainfall Intensity</span>
+          <span class="map-count-badge">5 Maps (Conditional)</span>
+        </div>
+        <div class="map-type-desc">Days 1 to 5 heavy rainfall intensity warnings. Generated automatically when heavy
+          rain tokens (HR, VHR, EHR) are present in the input.</div>
+        <div class="map-section-title">Warning Level Scale</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#009900;"></div>No warning(No action)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>Watch(Be updated)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF9900;"></div>Alert(Be prepared)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>Warning(Take action)
+        </div>
+        <div class="map-section-title">Rainfall Intensity Scale</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#009900;"></div>Light to moderate rain
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>Moderate to heavy rain
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF9900;"></div>Heavy to very heavy rain
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>Extremely heavy rain
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          rainfall_intensity_day1.png to day5.png</div>
+      </div>
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">🌡️</span>
+          <span class="map-type-name">Maximum Temp Forecast</span>
+          <span class="map-count-badge">5 Maps (Days 1–5)</span>
+        </div>
+        <div class="map-type-desc">Day 1–5 district maximum temperature forecasts with heatwave warning color scale from
+          <code>SUMMER.xlsx</code>.</div>
+        <div class="map-section-title">TMAX Scale</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#008000;"></div>No Warning (≤ 40 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>Be Alert — Light Heat (41–45 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF8000;"></div>Be Prepared — Heatwave (46–47 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>Warning — Severe Heatwave (&gt; 47 °C)
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          tmax_day1_DD-MM-YYYY.png to day5.png</div>
+      </div>
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">❄️</span>
+          <span class="map-type-name">Minimum Temp Forecast</span>
+          <span class="map-count-badge">5 Maps (Days 1–5)</span>
+        </div>
+        <div class="map-type-desc">Day 1–5 district minimum temperature forecasts with cold wave warning color scale
+          from <code>SUMMER.xlsx</code>.</div>
+        <div class="map-section-title">TMIN Scale</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>Severe Cold Wave (&lt; 5 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF8000;"></div>Cold Wave (5–10 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>Cold Day Alert (11–15 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#008000;"></div>Normal (&gt; 15 °C)
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          tmin_day1_DD-MM-YYYY.png to day5.png</div>
+      </div>
+
+      
+      <div class="map-type-card">
+        <div class="map-type-header">
+          <span class="map-type-icon">📊</span>
+          <span class="map-type-name">5-Day Grid Summary Bulletins</span>
+          <span class="map-count-badge">2 Bulletins</span>
+        </div>
+        <div class="map-type-desc">Consolidated single-page 3+2 grid summary layouts for Maximum and Minimum Temperature
+          forecasts across 5 days for official media bulletins.</div>
+        <div class="map-section-title">Summary Features</div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#008000;"></div>Normal (≤ 40 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FFFF00;"></div>Alert (41–45 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF8000;"></div>Heatwave (46–47 °C)
+        </div>
+        <div class="map-legend-row">
+          <div class="leg-swatch" style="background:#FF0000;"></div>Severe Heatwave (&gt; 47 °C)
+        </div>
+        <div class="map-section-title">Outputs</div>
+        <div class="map-legend-row" style="font-family:var(--mono); font-size:10.5px; color:var(--rain-dk);">
+          max_temp_5day_summary.png &amp; min_temp_5day_summary.png</div>
+      </div>
+
+    </div>
+
+    
+    <div class="section-label">Generated High-Resolution Map Gallery &amp; Download</div>
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap; gap:12px;">
+        <span>🖼️</span>
+        <span class="card-title">Live Generated Map Outputs</span>
+
+        <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="batch-download-group">
+            <button id="btn-dl-all-png" class="btn-download-batch btn-download-png" onclick="downloadBatch('png')" title="Download all high-resolution PNG maps packaged into a ZIP archive">
+              <span>🖼️</span>
+              <span>Download All PNGs</span>
+              <span class="badge-count" id="badge-dl-png-count">0</span>
+            </button>
+            <button id="btn-dl-all-pdf" class="btn-download-batch btn-download-pdf" onclick="downloadBatch('pdf')" title="Download all official bulletin PDFs packaged into a ZIP archive">
+              <span>📄</span>
+              <span>Download All PDFs</span>
+              <span class="badge-count" id="badge-dl-pdf-count">0</span>
+            </button>
+            <button id="btn-dl-all-zip" class="btn-download-batch btn-download-all" onclick="downloadBatch('all')" title="Download complete bundle of all PNGs &amp; PDFs as a single ZIP archive">
+              <span>📦</span>
+              <span>Download All (ZIP)</span>
+            </button>
+          </div>
+
+          <input type="text" id="map-search-input" placeholder="Search generated maps..." onkeyup="filterMapsView()"
+            class="map-search-input">
+
+          <div class="catalogue-tab-bar">
+            <button class="cat-tab-btn active" onclick="setMapFilter('all', this)">All</button>
+            <button class="cat-tab-btn" onclick="setMapFilter('spatial', this)">🌧️ 7-Day Spatial</button>
+            <button class="cat-tab-btn" onclick="setMapFilter('thunderstorm', this)">⚡ Thunderstorm</button>
+            <button class="cat-tab-btn" onclick="setMapFilter('intensity', this)">⚠️ Intensity</button>
+            <button class="cat-tab-btn" onclick="setMapFilter('temp', this)">🌡️ Temperature</button>
+            <button class="cat-tab-btn" onclick="setMapFilter('summary', this)">📊 Bulletins</button>
+          </div>
+
+          <div class="view-toggle-bar">
+            <button id="btn-view-table" class="view-toggle-btn active" onclick="setViewMode('table')">📋 Table</button>
+            <button id="btn-view-gallery" class="view-toggle-btn" onclick="setViewMode('gallery')">🖼️ Gallery</button>
+          </div>
+        </div>
+      </div>
+
+      
+      <div id="maps-table-container" class="card-body" style="padding:0;">
+        <div style="overflow-x:auto;">
+          <table class="output-table">
+            <thead>
+              <tr>
+                <th>Map Output File</th>
+                <th>Category</th>
+                <th>Format</th>
+                <th>Last Generated Timestamp</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="recent-outputs-body">
+              <tr>
+                <td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Scanning output folder…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      
+      <div id="maps-gallery-container" class="gallery-grid" style="display:none;">
+        
+      </div>
+    </div>
+
+    
+    <div class="section-label">Input Excel Workbooks Telemetry &amp; Upload</div>
+    <div class="card">
+      <div class="card-header">
+        <span>📂</span>
+        <span class="card-title">Direct Excel Input Workbooks (data/input/)</span>
+        <span class="card-badge" id="freshness-poll-info">Live Sync</span>
+      </div>
+      <div class="card-body">
+
+        
+        <div class="upload-box" id="drop-zone-box" onclick="document.getElementById('excel-file-upload').click()">
+          <div class="upload-icon">📤</div>
+          <div style="font-weight:700; font-size:13px; color:var(--navy-900); margin-bottom:4px;">Upload Meteorological
+            Forecast Excel Workbook (.xlsx)</div>
+          <div style="font-size:11px; color:var(--muted);">Click to browse or drag &amp; drop one or more forecast
+            workbooks. Files are saved instantly to <code>data/input/</code> for direct execution.</div>
+          <input type="file" id="excel-file-upload" accept=".xlsx" multiple style="display:none;"
+            onchange="handleExcelUpload(this)">
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="fresh-table">
+            <thead>
+              <tr>
+                <th>Workbook Name</th>
+                <th>Type / Target</th>
+                <th>Last Modified</th>
+                <th>Size</th>
+                <th>Status</th>
+                <th>Quick Action</th>
+              </tr>
+            </thead>
+            <tbody id="freshness-rows">
+              <tr>
+                <td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Scanning data/input
+                  directory…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  
+  <footer class="page-footer">
+    <div class="footer-row">
+      <span>India Meteorological Department</span>
+      <span class="sep">|</span>
+      <span>Meteorological Centre Hyderabad</span>
+      <span class="sep">|</span>
+      <span>Ph: 040-27908506</span>
+      <span class="sep">|</span>
+      <a href="https://mausam.imd.gov.in/hyderabad" target="_blank"
+        rel="noopener noreferrer">mausam.imd.gov.in/hyderabad</a>
+      <span class="sep">|</span>
+      <span>Ministry of Earth Sciences, Government of India</span>
+    </div>
+  </footer>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════
+    //  IMD Direct Excel Map Generation — Dashboard Telemetry JS
+    // ═══════════════════════════════════════════════════════════════════
+
+    const REFRESH_SEC = 10;
+    let lastRefresh = null;
+    let countdownSec = REFRESH_SEC;
+    let currentMapFilter = 'all';
+    let cachedMapsList = [];
+    let cachedExcelInputs = {};
+    let _runStartTs = null;
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = `toast-msg toast-${type}`;
+      const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️';
+      toast.innerHTML = `<span style="font-size:16px;">${icon}</span><span style="flex:1;">${msg}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px) scale(0.95)';
+        toast.style.transition = 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    async function fetchAPI(url) {
+      try {
+        const r = await fetch(url + '?t=' + Date.now());
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
+    }
+
+    let currentViewMode = 'table';
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      document.getElementById('btn-view-table')?.classList.toggle('active', mode === 'table');
+      document.getElementById('btn-view-gallery')?.classList.toggle('active', mode === 'gallery');
+
+      const tblContainer = document.getElementById('maps-table-container');
+      const galContainer = document.getElementById('maps-gallery-container');
+      if (tblContainer) tblContainer.style.display = mode === 'table' ? 'block' : 'none';
+      if (galContainer) galContainer.style.display = mode === 'gallery' ? 'grid' : 'none';
+
+      if (mode === 'table') renderMapsTable();
+      else renderMapsGallery();
+    }
+
+    function setMapFilter(category, btn) {
+      currentMapFilter = category;
+      document.querySelectorAll('.cat-tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filterMapsView();
+    }
+
+    function filterMapsView() {
+      if (currentViewMode === 'table') renderMapsTable();
+      else renderMapsGallery();
+    }
+
+    function getFilteredMaps() {
+      const searchTerm = (document.getElementById('map-search-input')?.value || '').toLowerCase();
+      let filtered = cachedMapsList;
+
+      if (currentMapFilter === 'intensity') {
+        filtered = filtered.filter(m => m.name.includes('intensity') || m.category.includes('Intensity'));
+      } else if (currentMapFilter === 'thunderstorm') {
+        filtered = filtered.filter(m => m.name.includes('thunderstorm') || m.category.includes('Thunderstorm'));
+      } else if (currentMapFilter === 'spatial') {
+        filtered = filtered.filter(m => (m.name.includes('forecast') || m.name.includes('spatial')) && !m.name.includes('tmax') && !m.name.includes('tmin'));
+      } else if (currentMapFilter === 'temp') {
+        filtered = filtered.filter(m => (m.name.includes('tmax') || m.name.includes('tmin')) && !m.name.includes('summary'));
+      } else if (currentMapFilter === 'summary') {
+        filtered = filtered.filter(m => m.name.includes('summary') || m.category.includes('Summary'));
+      }
+
+      if (searchTerm) {
+        filtered = filtered.filter(m =>
+          m.name.toLowerCase().includes(searchTerm) ||
+          m.category.toLowerCase().includes(searchTerm)
+        );
+      }
+      return filtered;
+    }
+
+    function renderMapsTable() {
+      const tbody = document.getElementById('recent-outputs-body');
+      if (!tbody) return;
+
+      const filtered = getFilteredMaps();
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">No maps matching filter criteria.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(m => `
+        <tr>
+          <td class="fname">${m.name}</td>
+          <td><span class="status-badge badge-info">${m.category}</span></td>
+          <td class="mono">${m.name.endsWith('.png') ? 'PNG (300 DPI)' : 'PDF Document'}</td>
+          <td class="mono">${m.mtime_str}</td>
+          <td>
+            <div style="display:flex; align-items:center; gap:6px;">
+              ${m.name.endsWith('.png') ? `<button onclick="openMapModal('${m.path}', '${m.name}', '${m.category}')" class="btn-link" style="cursor:pointer;">🔍 Preview</button>` : ''}
+              <a href="/${m.path}" target="_blank" class="btn-link">📥 Download</a>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderMapsGallery() {
+      const container = document.getElementById('maps-gallery-container');
+      if (!container) return;
+
+      const filtered = getFilteredMaps().filter(m => m.name.endsWith('.png'));
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:var(--muted); padding:30px;">No PNG map previews matching filter.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(m => `
+        <div class="gallery-card">
+          <div class="gallery-thumb-wrap" onclick="openMapModal('${m.path}', '${m.name}', '${m.category}')">
+            <img src="/${m.path}" alt="${m.name}" class="gallery-thumb-img" loading="lazy">
+            <div class="gallery-zoom-badge">🔍 Zoom Map</div>
+          </div>
+          <div class="gallery-info">
+            <div class="gallery-title">${m.name}</div>
+            <div class="gallery-meta">
+              <span class="status-badge badge-info">${m.category}</span>
+              <span class="mono">${m.size_kb} KB</span>
+            </div>
+            <div style="font-size:10px; color:var(--muted); font-family:var(--mono);">${m.mtime_str}</div>
+            <div class="gallery-actions">
+              <button onclick="openMapModal('${m.path}', '${m.name}', '${m.category}')" class="btn-link" style="flex:1; justify-content:center; cursor:pointer;">🔍 Preview</button>
+              <a href="/${m.path}" target="_blank" class="btn-link" style="flex:1; justify-content:center;">📥 Download</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderFreshnessTable(excelInputs) {
+      const tbody = document.getElementById('freshness-rows');
+      if (!tbody) return;
+
+      const files = Object.keys(excelInputs || {});
+      if (files.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No Excel workbooks found in data/input. Upload a workbook above to begin.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = files.map(fname => {
+        const info = excelInputs[fname];
+        const isSummer = fname.toLowerCase().includes('summer');
+        const roleText = isSummer ? '☀️ Summer Temperature 5-Day Forecast & Summaries' : '🌧️ 7-Day Spatial & Multi-Hazard Warnings';
+        const dotCls = 'ind-dot ind-ok';
+        const moduleType = isSummer ? 'summer' : 'rain';
+        return `
+          <tr>
+            <td class="fname">${fname}</td>
+            <td style="font-size:11.5px;color:var(--body-text);font-weight:600;">${roleText}</td>
+            <td class="mono" style="font-size:11.5px;">${info.mtime_str}</td>
+            <td class="mono">${info.size_kb} KB</td>
+            <td><span class="${dotCls}"></span><span class="data-ok">READY</span></td>
+            <td>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <button onclick="runSpecificWorkbook('${moduleType}', '${fname}')" class="btn-link" style="cursor:pointer;" title="Run Map Generation for this workbook">
+                  ▶ Run
+                </button>
+                <button onclick="deleteWorkbook('${fname}')" class="btn-link" style="cursor:pointer; background:var(--error-bg); color:var(--error); border-color:var(--error-ln);" title="Delete this workbook">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openMapModal(path, name, category) {
+      const modal = document.getElementById('map-lightbox-modal');
+      const img = document.getElementById('modal-lightbox-img');
+      const title = document.getElementById('modal-lightbox-title');
+      const dlLink = document.getElementById('modal-download-link');
+      if (!modal || !img) return;
+
+      const pngPath = path.endsWith('.pdf') ? path.replace('.pdf', '.png') : path;
+      img.src = '/' + pngPath;
+      title.textContent = `${name} — ${category}`;
+      if (dlLink) {
+        dlLink.href = '/' + path;
+        dlLink.download = name;
+      }
+      modal.style.display = 'flex';
+    }
+
+    function closeMapModal() {
+      const modal = document.getElementById('map-lightbox-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function downloadBatch(type) {
+      let label = 'Complete Map Package';
+      if (type === 'png') label = 'All High-Res PNG Maps';
+      else if (type === 'pdf') label = 'All Official PDF Bulletins';
+
+      showToast(`📦 Packaging ${label} into ZIP archive... Your download will begin shortly.`, 'info');
+
+      const btnId = type === 'png' ? 'btn-dl-all-png' : (type === 'pdf' ? 'btn-dl-all-pdf' : 'btn-dl-all-zip');
+      const btn = document.getElementById(btnId);
+      let origContent = '';
+      if (btn) {
+        origContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<span class="spinner-spin">⏳</span> Packaging...`;
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = origContent;
+        }, 3000);
+      }
+
+      const dlUrl = `/api/download_all?type=${type}&t=${Date.now()}`;
+      const link = document.createElement('a');
+      link.href = dlUrl;
+      link.setAttribute('download', '');
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+      }, 500);
+    }
+
+    async function handleExcelUpload(inputEl) {
+      if (!inputEl.files || inputEl.files.length === 0) return;
+      const files = Array.from(inputEl.files);
+      const formData = new FormData();
+      for (let i = 0; i < files.length; i++) {
+        formData.append(`file_${i}`, files[i], files[i].name);
+      }
+
+      showToast(`Uploading ${files.length} file(s) directly to data/input/…`, 'info');
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          await refresh();
+        } else {
+          showToast(data.message || 'Upload failed', 'error');
+        }
+      } catch (err) {
+        showToast('Upload error: ' + err.message, 'error');
+      } finally {
+        inputEl.value = '';
+      }
+    }
+
+    async function deleteWorkbook(fname) {
+      if (!confirm(`Are you sure you want to delete ${fname} from data/input/?`)) return;
+      try {
+        const res = await fetch(`/api/delete_workbook?file=${encodeURIComponent(fname)}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          await refresh();
+        } else {
+          showToast(data.message || 'Failed to delete workbook', 'error');
+        }
+      } catch (err) {
+        showToast('Delete error: ' + err.message, 'error');
+      }
+    }
+
+    async function runSpecificWorkbook(moduleType, fname) {
+      if (moduleType === 'summer') {
+        await triggerSummerPipeline();
+      } else {
+        await triggerRainPipeline();
+      }
+    }
+
+    function setupDragAndDrop() {
+      const dropBox = document.getElementById('drop-zone-box');
+      if (!dropBox) return;
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.style.borderColor = 'var(--rain)';
+          dropBox.style.background = '#E1EFFB';
+        }, false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.style.borderColor = '#A9CFEE';
+          dropBox.style.background = 'var(--rain-bg)';
+        }, false);
+      });
+      dropBox.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          const fakeInput = { files: files, value: '' };
+          handleExcelUpload(fakeInput);
+        }
+      }, false);
+    }
+
+    async function refresh() {
+      const apiData = await fetchAPI('/api/status');
+
+      lastRefresh = new Date();
+      if (apiData) {
+        cachedMapsList = apiData.maps || [];
+        cachedExcelInputs = apiData.excel_inputs || {};
+
+        // Update Overview Cards
+        const excelFiles = Object.keys(cachedExcelInputs);
+        const rainFile = excelFiles.find(f => !f.toLowerCase().includes('summer')) || 'Multi_Hazard.xlsx';
+        const summerFile = excelFiles.find(f => f.toLowerCase().includes('summer')) || 'SUMMER.xlsx';
+
+        document.getElementById('stat-rain-excel').textContent = rainFile;
+        document.getElementById('stat-summer-excel').textContent = summerFile;
+
+        if (cachedExcelInputs[rainFile]) {
+          document.getElementById('stat-rain-sub').textContent = cachedExcelInputs[rainFile].mtime_str;
+        }
+        if (cachedExcelInputs[summerFile]) {
+          document.getElementById('stat-summer-sub').textContent = cachedExcelInputs[summerFile].mtime_str;
+        }
+
+        const pngCount = apiData.png_count !== undefined ? apiData.png_count : (cachedMapsList.filter(m => m.name.endsWith('.png')).length);
+        const pdfCount = apiData.pdf_count !== undefined ? apiData.pdf_count : (cachedMapsList.filter(m => m.name.endsWith('.pdf')).length);
+        const totalCount = apiData.map_count !== undefined ? apiData.map_count : (pngCount + pdfCount);
+
+        const statVMaps = document.getElementById('stat-v-maps');
+        if (statVMaps) statVMaps.textContent = `${pngCount} PNGs`;
+        const statVSub = document.getElementById('stat-v-sub');
+        if (statVSub) statVSub.textContent = `${pngCount} PNGs + ${pdfCount} PDFs (${totalCount} Total)`;
+
+        const badgePng = document.getElementById('badge-dl-png-count');
+        if (badgePng) badgePng.textContent = `${pngCount}`;
+        const badgePdf = document.getElementById('badge-dl-pdf-count');
+        if (badgePdf) badgePdf.textContent = `${pdfCount}`;
+
+        // Update Live Progress Banner
+        const ps = apiData.pipeline_status || {};
+        const isRunning = apiData.pipeline_running || ps.running;
+        const progressCard = document.getElementById('execution-progress-card');
+
+        if (isRunning) {
+          if (!_runStartTs) _runStartTs = Date.now();
+          if (progressCard) progressCard.style.display = 'block';
+          const moduleName = (ps.module || 'ALL').toUpperCase();
+          document.getElementById('progress-module-title').textContent = `EXECUTING ${moduleName} MAPS GENERATION PIPELINE`;
+          document.getElementById('progress-step-text').textContent = ps.current_step || 'Processing maps directly from Excel in background...';
+          const pct = ps.progress || 0;
+          document.getElementById('progress-pct-text').textContent = `${pct}%`;
+          document.getElementById('progress-bar-fill').style.width = `${pct}%`;
+        } else {
+          _runStartTs = null;
+          if (progressCard) progressCard.style.display = 'none';
+        }
+
+        // Render Tables & Freshness
+        renderMapsTable();
+        renderFreshnessTable(cachedExcelInputs);
+      }
+    }
+
+    async function triggerRainPipeline() {
+      const btn = document.getElementById('btn-gen-rain');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-spin">⏳</span> Starting Rainfall Pipeline...'; }
+      try {
+        const res = await fetch('/api/run_rain_pipeline', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message, 'warning');
+        }
+        refresh();
+      } catch (err) {
+        showToast('Failed to start Rain pipeline: ' + err.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>🌧️</span><span>Generate Rain &amp; Warning Maps</span>'; }
+      }
+    }
+
+    async function triggerSummerPipeline() {
+      const btn = document.getElementById('btn-gen-summer');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-spin">⏳</span> Starting Summer Pipeline...'; }
+      try {
+        const res = await fetch('/api/run_summer_pipeline', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message, 'warning');
+        }
+        refresh();
+      } catch (err) {
+        showToast('Failed to start Summer pipeline: ' + err.message, 'error');
+      } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span>☀️</span><span>Generate Temperature Maps</span>'; }
+      }
+    }
+
+    async function triggerParseExcel(event) {
+      const btn = event ? (event.target.closest('button') || event.target) : document.getElementById('btn-parse-excel');
+      let orig = '';
+      if (btn) { orig = btn.innerHTML; btn.innerHTML = '<span class="spinner-spin">⏳</span> Validating Ingestion...'; btn.disabled = true; }
+      try {
+        const res = await fetch('/api/parse_excel', { method: 'POST' });
+        const text = await res.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { throw new Error(text.substring(0, 100)); }
+        if (data.success) {
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message || 'Validation failed: ' + data.error, 'error');
+        }
+        refresh();
+      } catch (err) { showToast('Ingestion validation error: ' + err.message, 'error'); }
+      finally { if (btn) { btn.innerHTML = orig; btn.disabled = false; } }
+    }
+
+    async function triggerPipeline(module = 'all', event = null) {
+      const btn = event ? (event.target.closest('button') || event.target) : document.getElementById('btn-run-all');
+      let orig = '';
+      if (btn) { orig = btn.innerHTML; btn.innerHTML = '<span class="spinner-spin">⏳</span> Launching Full Pipeline...'; btn.disabled = true; }
+      try {
+        const res = await fetch('/api/run_pipeline?module=' + module, { method: 'POST' });
+        const text = await res.text();
+        let data = {};
+        try { data = JSON.parse(text); } catch { throw new Error(text.substring(0, 100)); }
+        if (data.success) {
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message || 'Pipeline warning: ' + data.error, 'warning');
+        }
+        refresh();
+      } catch (err) { showToast('Pipeline execution error: ' + err.message, 'error'); }
+      finally { if (btn) { btn.innerHTML = orig; btn.disabled = false; } }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('live-time').textContent = now.toLocaleTimeString('en-IN', { hour12: false });
+      document.getElementById('live-date').textContent = now.toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function tick() {
+      countdownSec--;
+      if (countdownSec <= 0) {
+        countdownSec = REFRESH_SEC;
+        refresh();
+      }
+      document.getElementById('countdown-val').textContent = `${countdownSec}s`;
+      if (lastRefresh) {
+        document.getElementById('refresh-info').textContent = `Last fetched: ${lastRefresh.toLocaleTimeString('en-IN', { hour12: false })}`;
+      }
+      if (_runStartTs) {
+        const elapsedSec = Math.round((Date.now() - _runStartTs) / 1000);
+        const elapsedEl = document.getElementById('progress-elapsed-val');
+        if (elapsedEl) elapsedEl.textContent = `${elapsedSec}s`;
+      }
+    }
+
+    updateClock();
+    refresh();
+    setupDragAndDrop();
+    setInterval(updateClock, 1000);
+    setInterval(tick, 1000);
+  </script>
+
+  
+  <div id="map-lightbox-modal" class="modal-overlay" onclick="if(event.target===this) closeMapModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modal-lightbox-title" class="modal-title">Map Preview</span>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <a id="modal-download-link" href="#" target="_blank" class="btn-link">📥 Download High-Res</a>
+          <button class="modal-close-btn" onclick="closeMapModal()" title="Close">✕</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <img id="modal-lightbox-img" src="" alt="High Resolution Generated IMD Map" class="modal-img">
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

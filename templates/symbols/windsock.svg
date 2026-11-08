@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Flagpole / Mast -->
+  <line x1="22" y1="12" x2="22" y2="88" stroke="#111111" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="22" cy="12" r="3.5" fill="#111111"/>
+  
+  <!-- Swivel / Mount Rings -->
+  <line x1="22" y1="18" x2="30" y2="21" stroke="#333333" stroke-width="2.5"/>
+  <line x1="22" y1="36" x2="30" y2="33" stroke="#333333" stroke-width="2.5"/>
+  
+  <!-- Windsock Mouth Ring -->
+  <ellipse cx="30" cy="27" rx="3.5" ry="9" fill="#CC0000" stroke="#111111" stroke-width="2"/>
+  
+  <!-- Windsock Conical Body with Alternating Red & White Stripes -->
+  <!-- Stripe 1 (Red) -->
+  <path d="M 30 18 L 44 22 L 44 32 L 30 36 Z" fill="#E60000" stroke="#111111" stroke-width="1.8"/>
+  <!-- Stripe 2 (White) -->
+  <path d="M 44 22 L 58 26 L 58 38 L 44 32 Z" fill="#FFFFFF" stroke="#111111" stroke-width="1.8"/>
+  <!-- Stripe 3 (Red) -->
+  <path d="M 58 26 L 72 30 L 72 44 L 58 38 Z" fill="#E60000" stroke="#111111" stroke-width="1.8"/>
+  <!-- Stripe 4 (White) -->
+  <path d="M 72 30 L 86 34 L 86 50 L 72 44 Z" fill="#FFFFFF" stroke="#111111" stroke-width="1.8"/>
+  <!-- Stripe 5 (Red Tip) -->
+  <path d="M 86 34 L 95 37.5 L 95 54 L 86 50 Z" fill="#E60000" stroke="#111111" stroke-width="1.8"/>
+  
+  <!-- Windsock Tail Opening -->
+  <ellipse cx="95" cy="45.75" rx="2" ry="8.25" fill="#990000" stroke="#111111" stroke-width="1.5"/>
+</svg>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80" width="100" height="80">
+  <defs>
+    <filter id="shadowMod" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    <linearGradient id="cloudGradMod" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#6B7280"/>
+      <stop offset="50%" stop-color="#4B5563"/>
+      <stop offset="100%" stop-color="#374151"/>
+    </linearGradient>
+  </defs>
+  <!-- Main Puffy Cloud (Moderate/Grey) -->
+  <g filter="url(#shadowMod)">
+    <path d="M 30 52 
+             C 22 52, 14 45, 14 37 
+             C 14 30, 19 24, 26 23 
+             C 28 14, 37 8, 48 8 
+             C 58 8, 67 14, 70 23 
+             C 77 24, 84 30, 84 37 
+             C 84 45, 77 52, 68 52 
+             Z" 
+          fill="url(#cloudGradMod)" stroke="#1F2937" stroke-width="1.5" stroke-linejoin="round"/>
+    <!-- Highlight on Top -->
+    <path d="M 40 16 C 45 12, 53 12, 58 15" fill="none" stroke="#9CA3AF" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+  </g>
+  <!-- Rain Drops (Moderate to Heavy Rain) -->
+  <g fill="#1E293B" stroke="#0F172A" stroke-width="0.75">
+    <path d="M 28 58 C 28 58, 25 64, 25 66 C 25 68, 27 70, 29 70 C 31 70, 33 68, 33 66 C 33 64, 30 58, 30 58 Z"/>
+    <path d="M 42 60 C 42 60, 39 66, 39 68 C 39 70, 41 72, 43 72 C 45 72, 47 70, 47 68 C 47 66, 44 60, 44 60 Z"/>
+    <path d="M 56 58 C 56 58, 53 64, 53 66 C 53 68, 55 70, 57 70 C 59 70, 61 68, 61 66 C 61 64, 58 58, 58 58 Z"/>
+    <path d="M 70 60 C 70 60, 67 66, 67 68 C 67 70, 69 72, 71 72 C 73 72, 75 70, 75 68 C 75 66, 72 60, 72 60 Z"/>
+  </g>
+</svg>
